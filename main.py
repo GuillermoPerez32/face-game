@@ -17,12 +17,47 @@ emociones = ['happy', 'sad', 'angry', 'surprise', 'neutral']
 # Inicializar cámara
 cap = cv2.VideoCapture(0)
 
+# Registrar las caras de los jugadores
+
+
+def registrar_cara(jugador):
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            continue
+
+        # Mostrar instrucciones
+        screen.fill((255, 255, 255))
+        text = font.render(
+            f"Jugador {jugador}: Coloca tu cara frente a la cámara", True, (0, 0, 0))
+        screen.blit(text, (50, 250))
+
+        # Mostrar feed de la cámara
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = np.rot90(frame_rgb)
+        frame_surface = pygame.surfarray.make_surface(frame_rgb)
+        # Ajustar posición según sea necesario
+        screen.blit(frame_surface, (0, 0))
+
+        pygame.display.flip()
+
+        # Capturar cara al presionar 'c'
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_c:
+                face_representation = DeepFace.represent(
+                    frame, model_name='Facenet', enforce_detection=False)
+                return face_representation
+
+
+# Registrar caras de los jugadores
+jugador_1_face = registrar_cara(1)
+jugador_2_face = registrar_cara(2)
+
 # Variables del juego
 puntos = [0, 0]  # Puntos para cada jugador
 tiempo_limite = 5  # Segundos para cada emoción
 ultimo_cambio = time.time()
 emocion_objetivo = random.choice(emociones)
-jugador_actual = 0  # 0 para jugador 1, 1 para jugador 2
 
 running = True
 while running:
@@ -34,28 +69,34 @@ while running:
     # Reducir tamaño de la imagen para mejorar rendimiento
     small_frame = cv2.resize(frame, (300, 300))
 
-    # Intentar detectar emoción
+    # Intentar detectar emoción y jugador
     try:
         result = DeepFace.analyze(small_frame, actions=[
                                   'emotion'], enforce_detection=False)
         emocion_detectada = result[0]['dominant_emotion']
+
+        # Identificar jugador
+        face_representation = DeepFace.represent(
+            small_frame, model_name='Facenet', enforce_detection=False)
+        dist_1 = DeepFace.verify(face_representation, jugador_1_face,
+                                 model_name='Facenet', enforce_detection=False)['distance']
+        dist_2 = DeepFace.verify(face_representation, jugador_2_face,
+                                 model_name='Facenet', enforce_detection=False)['distance']
+        jugador_actual = 0 if dist_1 < dist_2 else 1
     except:
         emocion_detectada = "No face detected"
+        jugador_actual = None
 
     # Comprobar si la emoción detectada coincide con la objetivo
-    if emocion_detectada == emocion_objetivo:
+    if jugador_actual is not None and emocion_detectada == emocion_objetivo:
         puntos[jugador_actual] += 1
         emocion_objetivo = random.choice(emociones)  # Nueva emoción a imitar
         ultimo_cambio = time.time()  # Reiniciar tiempo
-        # Cambiar de turno
-        jugador_actual = (jugador_actual + 1) % 2
 
     # Reiniciar emoción objetivo después de tiempo límite
     if time.time() - ultimo_cambio > tiempo_limite:
         emocion_objetivo = random.choice(emociones)
         ultimo_cambio = time.time()
-        # Cambiar de turno
-        jugador_actual = (jugador_actual + 1) % 2
 
     # Convertir el frame de OpenCV (BGR) a RGB para Pygame
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -69,7 +110,7 @@ while running:
     score_text = font.render(
         f"P1: {puntos[0]}  P2: {puntos[1]}", True, (0, 0, 255))
     turno_text = font.render(
-        f"Turno: Jugador {jugador_actual + 1}", True, (0, 128, 0))
+        f"Turno: Jugador {jugador_actual + 1}" if jugador_actual is not None else "Detectando...", True, (0, 128, 0))
     screen.blit(text, (500, 100))
     screen.blit(score_text, (500, 200))
     screen.blit(turno_text, (500, 300))
