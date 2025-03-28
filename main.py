@@ -9,7 +9,7 @@ import numpy as np
 pygame.init()
 screen = pygame.display.set_mode((800, 600))
 pygame.display.set_caption("Juego de Expresiones Multijugador")
-font = pygame.font.Font(None, 50)
+font = pygame.font.Font(None, 30)
 
 # Emociones posibles
 emociones = ['happy', 'sad', 'angry', 'surprise', 'neutral']
@@ -29,14 +29,16 @@ def registrar_cara(jugador):
         # Mostrar instrucciones
         screen.fill((255, 255, 255))
         text = font.render(
-            f"Jugador {jugador}: Coloca tu cara frente a la cámara y presiona 6", True, (0, 0, 0))
-        screen.blit(text, (0, 0))
+            f"Jugador {jugador}: Coloca tu cara frente a la cámara y presiona la tecla C", True, (0, 0, 0))
+        screen.blit(text, (10, 0))
 
         # Mostrar feed de la cámara
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = np.rot90(frame_rgb)
         frame_surface = pygame.surfarray.make_surface(frame_rgb)
         # Ajustar posición según sea necesario
-        screen.blit(frame_surface, (0, 80))
+        frame_surface = pygame.transform.scale(frame_surface, (400, 300))
+        screen.blit(frame_surface, (200, 80))
 
         pygame.display.flip()
 
@@ -101,18 +103,20 @@ while running:
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_rgb = np.rot90(frame_rgb)
     frame_surface = pygame.surfarray.make_surface(frame_rgb)
+    # Ajustar posición según sea necesario
+    frame_surface = pygame.transform.scale(frame_surface, (400, 300))
 
     # Dibujar en Pygame
     screen.fill((255, 255, 255))
-    screen.blit(frame_surface, (0, 0))
+    screen.blit(frame_surface, (200, 80))
     text = font.render(f"Imita: {emocion_objetivo}", True, (0, 0, 0))
     score_text = font.render(
         f"P1: {puntos[0]}  P2: {puntos[1]}", True, (0, 0, 255))
     turno_text = font.render(
         f"Turno: Jugador {jugador_actual + 1}" if jugador_actual is not None else "Detectando...", True, (0, 128, 0))
-    screen.blit(text, (500, 100))
-    screen.blit(score_text, (500, 200))
-    screen.blit(turno_text, (500, 300))
+    screen.blit(text, (10, 100))
+    screen.blit(score_text, (10, 200))
+    screen.blit(turno_text, (10, 300))
 
     # Eventos de Pygame
     for event in pygame.event.get():
