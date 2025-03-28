@@ -3,11 +3,12 @@ import cv2
 import pygame
 import random
 import time
+import numpy as np
 
 # Inicializar Pygame
 pygame.init()
-screen = pygame.display.set_mode((600, 400))
-pygame.display.set_caption("Juego de Expresiones")
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Juego de Expresiones Multijugador")
 font = pygame.font.Font(None, 50)
 
 # Emociones posibles
@@ -17,10 +18,11 @@ emociones = ['happy', 'sad', 'angry', 'surprise', 'neutral']
 cap = cv2.VideoCapture(0)
 
 # Variables del juego
-puntos = 0
+puntos = [0, 0]  # Puntos para cada jugador
 tiempo_limite = 5  # Segundos para cada emoción
 ultimo_cambio = time.time()
 emocion_objetivo = random.choice(emociones)
+jugador_actual = 0  # 0 para jugador 1, 1 para jugador 2
 
 running = True
 while running:
@@ -42,26 +44,35 @@ while running:
 
     # Comprobar si la emoción detectada coincide con la objetivo
     if emocion_detectada == emocion_objetivo:
-        puntos += 1
+        puntos[jugador_actual] += 1
         emocion_objetivo = random.choice(emociones)  # Nueva emoción a imitar
         ultimo_cambio = time.time()  # Reiniciar tiempo
+        # Cambiar de turno
+        jugador_actual = (jugador_actual + 1) % 2
 
     # Reiniciar emoción objetivo después de tiempo límite
     if time.time() - ultimo_cambio > tiempo_limite:
         emocion_objetivo = random.choice(emociones)
         ultimo_cambio = time.time()
+        # Cambiar de turno
+        jugador_actual = (jugador_actual + 1) % 2
 
-    # Mostrar la emoción detectada en OpenCV
-    cv2.putText(frame, f"Emocion: {emocion_detectada}",
-                (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.imshow('Emotion Detection', frame)
+    # Convertir el frame de OpenCV (BGR) a RGB para Pygame
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame_rgb = np.rot90(frame_rgb)
+    frame_surface = pygame.surfarray.make_surface(frame_rgb)
 
     # Dibujar en Pygame
     screen.fill((255, 255, 255))
+    screen.blit(frame_surface, (0, 0))
     text = font.render(f"Imita: {emocion_objetivo}", True, (0, 0, 0))
-    score_text = font.render(f"Puntos: {puntos}", True, (0, 0, 255))
-    screen.blit(text, (150, 150))
-    screen.blit(score_text, (220, 250))
+    score_text = font.render(
+        f"P1: {puntos[0]}  P2: {puntos[1]}", True, (0, 0, 255))
+    turno_text = font.render(
+        f"Turno: Jugador {jugador_actual + 1}", True, (0, 128, 0))
+    screen.blit(text, (500, 100))
+    screen.blit(score_text, (500, 200))
+    screen.blit(turno_text, (500, 300))
 
     # Eventos de Pygame
     for event in pygame.event.get():
