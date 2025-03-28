@@ -29,15 +29,14 @@ def registrar_cara(jugador):
         # Mostrar instrucciones
         screen.fill((255, 255, 255))
         text = font.render(
-            f"Jugador {jugador}: Coloca tu cara frente a la cámara", True, (0, 0, 0))
-        screen.blit(text, (50, 250))
+            f"Jugador {jugador}: Coloca tu cara frente a la cámara y presiona 6", True, (0, 0, 0))
+        screen.blit(text, (0, 0))
 
         # Mostrar feed de la cámara
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_rgb = np.rot90(frame_rgb)
         frame_surface = pygame.surfarray.make_surface(frame_rgb)
         # Ajustar posición según sea necesario
-        screen.blit(frame_surface, (0, 0))
+        screen.blit(frame_surface, (0, 80))
 
         pygame.display.flip()
 
